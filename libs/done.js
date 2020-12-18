@@ -13,7 +13,7 @@ module.exports = {
         var doneIndex = num - 1;                                                    // get index of task to be marked
         var taskjson = json.getJSON(todo);                                          // get data in JSON format
 
-        if(num > taskjson.tasks.length || num === 0)                                // if provided data is not present raise error
+        if(num > taskjson.tasks.length || num <= 0)                                // if provided data is not present raise error
         {
             console.log(`\x1b[91mError: todo #${num} does not exist.\x1b[0m`);
             return;
