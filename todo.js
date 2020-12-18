@@ -1,16 +1,24 @@
+#!/usr/bin/env node
+
+//  importing all required modules.
+// All the local modules are present in "libs" directory
+
 const fs = require('fs');
 const touch = require('touch');
+const usage = require('./libs/usage');
+const add = require('./libs/add');
+const list = require('./libs/list');
+const del = require('./libs/delete');
+const done = require('./libs/done');
+const report = require('./libs/report');
 
-//constants to create files
-const currentDirectory = process.cwd();
-const fileToAdd = currentDirectory + "/todo.txt";
-const fileDone = currentDirectory + "/done.txt";
+const currentDirectory = process.cwd();                 //  get the current working directory
+const fileToAdd = currentDirectory + "/todo.txt";       //  creating path to add todo.txt 
+const fileDone = currentDirectory + "/done.txt";        //  creating path to add done.txt
 
-const initialData = {
-    tasks: []
-}
+const initialData = { tasks: [] };
 
-//create file if it isn't present.
+//  create file in current directory if it isn't present.
 function init(){
 	if(!fs.existsSync(fileToAdd)){
         touch('todo.txt');
@@ -22,125 +30,62 @@ function init(){
 	}
 }
 
-function getJSON(fromFile){
-    var content = fs.readFileSync(fromFile);
-    return JSON.parse(content.toString());
-}
-
-function writeToFile(fileName, data) {
-    var json = getJSON(fileName);
-    json.tasks.push(data);
-    fs.writeFileSync(fileName, JSON.stringify(json));
-}
-
-
-//display usage
-function usage() {
-    var usage =
-    `Usage :-
-    $ ./todo add "todo item"  # Add a new todo
-    $ ./todo ls               # Show remaining todos
-    $ ./todo del NUMBER       # Delete a todo
-    $ ./todo done NUMBER      # Complete a todo
-    $ ./todo help             # Show usage
-    $ ./todo report           # Statistics`;
-
-	console.log(usage);
-}
-
-function add(file, task){
-    writeToFile(file, task);
-    console.log(`Added todo: "${task}"`);
-}
-
-function list() {
-    var taskjson = getJSON(fileToAdd);
-    var taskList = taskjson.tasks;
-    var i = taskList.length - 1;
-    for(;i >= 0; i--)
-    {
-        console.log(`[${i+1}] ${taskList[i]}`);
-    }
-    
-}
-
-function del(num){
-    var delIndex = parseInt(num) - 1;
-    var deleteFrom = getJSON(fileToAdd);
-    if(parseInt(num) > deleteFrom.tasks.length)
-    {
-        console.log(`Error: todo #${num} does not exist. Nothing deleted.`);
-        return
-    }
-    deleteFrom.tasks.splice(delIndex,1)
-    fs.writeFileSync(fileToAdd, JSON.stringify(deleteFrom));
-    console.log(`Deleted todo #${num}`);
-}
-
-function done(num){
-    var doneIndex = parseInt(num) - 1;
-    var taskjson = getJSON(fileToAdd);
-    if(parseInt(num) > taskjson.tasks.length)
-    {
-        console.log(`Error: todo #${num} does not exist.`);
-        return;
-    }
-    var taskdone = taskjson.tasks.splice(doneIndex,1);
-    fs.writeFileSync(fileToAdd, JSON.stringify(taskjson));
-    var date = new Date();
-    var donedata = `x ${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()} ${taskdone}`;
-    writeToFile(fileDone, donedata);
-    console.log(`Marked todo #${num} as done.`)
-}
-
-function report(){
-    var pending = getJSON(fileToAdd);
-    var done = getJSON(fileDone);
-    var date = new Date()
-
-    console.log(`${date.getDate()}/${date.getMonth()+1}/${date.getFullYear()} Pending : ${pending.tasks.length} Completed : ${done.tasks.length}`)
-}
-
+// get the command line arguments
 var command = process.argv[2];
 var argument = process.argv[3];
 
+//initialise file creation
 init();
 
+//  Driver Code to Pick command line choices
 switch(command){
+
     case undefined:
     case "help":
-        usage();
+        usage.Usage();          // Displays usage of todo cli 
         break;
+
+    // to add task
     case "add":
-        if(!argument)
+        if(!argument)           // if no task provided to add
         {
-            console.log("Error: No todo provided");
+            console.log("\x1b[91mError: Missing todo string. Nothing added!\x1b[0m");           
             break;
         }
-        add(fileToAdd, argument)
+        add.task(fileToAdd, argument)           // adds task to todo.txt and displays message
         break;
+
+    // to list tasks
     case "ls":
-        list();
+        list.task(fileToAdd);
         break;
+
+    // to delete task
     case "del":
-        if(!argument)
+        if(!argument)           // if no task number provided to delete
         {
-            console.log("Error: No todo provided");
+            console.log("\x1b[91mError: Missing NUMBER for deleting todo.\x1b[0m");
             break;
         }
-        del(argument);
+        del.task(fileToAdd, parseInt(argument));    // deletes provided task
         break;
+    
+    // mark task as done
     case "done":
-        if(!argument)
+        if(!argument)           // if no task provided to mark
         {
-            console.log("Error: No todo provided");
+            console.log("\x1b[91mError: Missing NUMBER for marking todo as done.\x1b[0m");
             break;
         }
-        done(argument);
+        done.task(fileToAdd, fileDone, parseInt(argument));        // to mark done
         break;
+
+    // generate reports
     case "report":
-        report()
+        report.stats(fileToAdd, fileDone) 
         break;
+
+    // if invalid command proveded
 	default:
 		console.log("\x1b[91mCommand not found!!\x1b[0m");
 		usage();
